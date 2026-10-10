@@ -110,9 +110,11 @@ with every test passing (dots, no `F`s). It takes about a minute.
 ```bash
 cardiotwin serve
 ```
-Leave this terminal open: it is now running a small website on your own computer. Open your
-web browser and go to **<http://127.0.0.1:8000>**. Nothing is sent over the internet; it all
-runs locally.
+Wait for the line **`CardioTwin is ready: http://127.0.0.1:8000`** (the very first start can
+take up to a minute). Your browser then opens the dashboard by itself; if it doesn't, open
+**<http://127.0.0.1:8000>** yourself. Leave this terminal open: it is running a small website on
+your own computer, and closing it (or pressing Ctrl+C) stops the dashboard. Nothing is sent over
+the internet; it all runs locally.
 
 What you see, top to bottom:
 
@@ -284,7 +286,8 @@ drives). The data use agreement forbids it, and `.gitignore` keeps them out of G
 | `requires a different Python: 3.9...` | Same fix: install Python 3.12 and recreate `.venv` with `python3.12 -m venv .venv`. |
 | `python` opens the Microsoft Store (Windows) | Reinstall Python from python.org and tick "Add python.exe to PATH". |
 | `running scripts is disabled` (Windows) | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then activate again. |
-| `address already in use` when starting the dashboard | Another copy is running. Close it, or use `cardiotwin serve --port 8001` and open <http://127.0.0.1:8001>. |
+| Browser says "refused to connect" / "can't connect" | The dashboard isn't running (yet). Look at the terminal: wait for `CardioTwin is ready`, then refresh. If the terminal shows the `%` / `$` prompt again, the dashboard stopped: run `cardiotwin serve` again and read any error above the prompt. |
+| `Port 8000 is already in use` | Another copy is running in some terminal. Use that one (open <http://127.0.0.1:8000>), or start on another port: `cardiotwin serve --port 8001`. |
 | The dashboard says "No model installed yet" | Run the command from inside the `cardiotwin` folder, or pass `--models path/to/cardiotwin/models`. |
 | Upload error "missing required leads" | The file's column names must be lead names (`I`, `II`, `V1`, ... or `X`, `Y`, `Z`). Rename the columns. |
 | Upload error about the sampling rate | Add a `time` column (seconds) or type the sampling rate into the upload form. |

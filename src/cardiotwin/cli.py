@@ -231,14 +231,55 @@ def cmd_predict(a) -> None:
     print(render_profile_text(res["profile"]))
 
 
+def _port_in_use(host: str, port: int) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind((host, port))
+        except OSError:
+            return True
+    return False
+
+
+def _open_browser_when_ready(host: str, port: int, url: str, timeout_s: float = 120.0) -> None:
+    """Open the dashboard in the default browser as soon as the server accepts connections."""
+    import socket
+    import time
+    import webbrowser
+
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=1.0):
+                break
+        except OSError:
+            time.sleep(0.5)
+    else:
+        return
+    webbrowser.open(url)
+
+
 def cmd_serve(a) -> None:
+    import threading
+
+    browse_host = "127.0.0.1" if a.host in ("0.0.0.0", "::") else a.host
+    url = f"http://{browse_host}:{a.port}"
+    if _port_in_use(a.host, a.port):
+        sys.exit(f"Port {a.port} is already in use (is CardioTwin already running in another terminal?).\n"
+                 f"Either open {url} in your browser, or start on another port: cardiotwin serve --port {a.port + 1}")
+    print("Starting CardioTwin... (the first start can take up to a minute while Python loads PyTorch)", flush=True)
     import uvicorn
 
     from .app.server import create_app
 
     app = create_app(a.models)
-    print(f"CardioTwin dashboard on http://{a.host}:{a.port}  ({DISCLAIMER})")
-    uvicorn.run(app, host=a.host, port=a.port, log_level="info")
+    print(f"\n  CardioTwin is ready:  {url}\n  Keep this window open while you use it. Press Ctrl+C to stop.\n"
+          f"  ({DISCLAIMER})\n", flush=True)
+    if not a.no_browser:
+        threading.Thread(target=_open_browser_when_ready, args=(browse_host, a.port, url), daemon=True).start()
+    uvicorn.run(app, host=a.host, port=a.port, log_level="warning")
 
 
 def default_models_dir() -> str:
@@ -353,6 +394,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--models", default=default_models_dir())
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--no-browser", action="store_true", help="do not open the dashboard in a browser automatically")
     s.set_defaults(func=cmd_serve)
     return p
 
