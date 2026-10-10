@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data: NEVER commit MIMIC (DUA-governed) or bulk raw data. Anchored to the repo root
+# so the source package src/cardiotwin/data/ is not ignored.
+/data/
+/runs/
+/outputs/
+/screenshots/
+*.npy
+
+# Local quick-run reports
+/reports/*/quick/
+
+.DS_Store

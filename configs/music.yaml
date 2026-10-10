@@ -1,0 +1,66 @@
+# CardioTwin on the open MUSIC dataset (real ECGs + real echo measurements).
+#
+#   cardiotwin download-music          # ~1.2 GB of 5-minute ECG excerpts + clinical data
+#   cardiotwin build-music             # preprocess into data/processed/music
+#   cardiotwin experiment configs/music.yaml
+#
+name: music
+title: "CardioTwin on MUSIC: echocardiogram estimates from a 10-second ECG"
+dataset_title: "MUSIC (Sudden Cardiac Death in Chronic Heart Failure), PhysioNet"
+dataset_description: >-
+  992 ambulatory chronic heart-failure patients from 8 Spanish hospitals; 687 have a high-resolution
+  orthogonal-lead (X/Y/Z, 1000 Hz) ECG. Echo measurements (LVEF, LV diameters, wall thickness, left atrial
+  and right ventricular size) and ~4 years of follow-up for cardiac death and transplantation.
+  Open access (ODbL). Martin-Yebra A, Martinez JP, Laguna P. PhysioNet, doi:10.13026/z3m7-rf58.
+store_dir: data/processed/music
+ecg_root: data/raw/music
+run_dir: runs/music
+report_dir: reports/music
+vcg_z_anterior: true          # MUSIC's Z lead points forwards (checked: QRS area negative in 88% of narrow-QRS sinus ECGs)
+primary_target: lvef
+targets: [lvef, lvedd, lvesd, ivsd, lvpwd, la_diam, rv_diam, lv_mass]
+test_fraction: 0.2
+folds: 5
+seed: 7
+eval_windows: 9               # odd, so the central 10-s window is included
+bootstrap: 1000
+train:
+  epochs: 40
+  patience: 8
+  batch_size: 64
+  lr: 0.002
+  weight_decay: 0.01
+  crops_per_ecg: 8
+  width: 16
+  kernel: 9
+  dropout: 0.2
+  window_s: 10.0
+variants:
+  ecg: []
+  ecg_age_sex: [age, sex]
+baselines: true
+leakage_demo:
+  windows_per_ecg: 12
+  epochs: 15
+  patience: 5
+survival:
+  time_col: time_days
+  event_col: event_hf
+  horizon_days: 1460
+  label: "Heart-failure death or transplant"
+  population: "ambulatory chronic heart-failure patients (MUSIC)"
+  twin_features: [lvef, lvedd, la_diam]
+  twin_variant: ecg
+subgroups: [sex, age_band, rhythm, nyha]
+explain_n: 100
+export:
+  dir: models/music-xyz
+  variants: [ecg, ecg_age_sex]
+  demo_ecgs: 8
+  title: "CardioTwin v0.1 (MUSIC, X/Y/Z leads)"
+  description: >-
+    Trained on 10-second orthogonal-lead ECGs from heart-failure patients in the MUSIC study. Estimates
+    echocardiographic LV function and dimensions, and 4-year heart-failure event risk.
+  license_note: >-
+    Trained on MUSIC (ODbL). Demo ECGs are excerpts of MUSIC records, redistributed under the ODbL
+    with attribution: Martin-Yebra A, Martinez JP, Laguna P. PhysioNet. doi:10.13026/z3m7-rf58.

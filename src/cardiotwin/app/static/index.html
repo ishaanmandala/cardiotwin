@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CardioTwin</title>
+  <meta name="description" content="CardioTwin estimates what an echocardiogram would show from a 10-second ECG. Research model, not for clinical use.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23c62f3a' d='M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z"/><path class="logo-trace" d="M4 16h6l2-4 3 9 3-12 2 7h8"/></svg>
+      <span class="brand-name">CardioTwin</span>
+      <span class="brand-version">v0.1</span>
+    </div>
+    <p class="tagline">What would the echocardiogram show? Estimated from a 10-second ECG.</p>
+    <div class="research-badge" role="note"><span aria-hidden="true">&#9888;</span> Research model &middot; not for clinical use</div>
+  </header>
+
+  <main id="main">
+    <section class="card input-card" aria-labelledby="input-title">
+      <div class="card-head">
+        <h2 id="input-title">1 &middot; Choose an ECG</h2>
+        <div class="segmented" role="tablist" aria-label="ECG source">
+          <button role="tab" id="tab-demo" aria-selected="true" aria-controls="panel-demo">Demo patients</button>
+          <button role="tab" id="tab-upload" aria-selected="false" aria-controls="panel-upload">Upload your own</button>
+        </div>
+      </div>
+
+      <div id="panel-demo" role="tabpanel" aria-labelledby="tab-demo">
+        <p class="hint">Real ECGs from patients the model never saw during training. Their actual echo results are shown next to CardioTwin's estimate so you can judge it.</p>
+        <div id="demo-list" class="demo-list" aria-live="polite"></div>
+      </div>
+
+      <div id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" hidden>
+        <form id="upload-form" class="upload-form">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="file-input" name="files" multiple accept=".hea,.dat,.csv,.txt,.npz,.npy,.json">
+            <span class="dz-title">Drop ECG files here or <u>browse</u></span>
+            <span class="dz-sub">WFDB (.hea + .dat), CSV (one column per lead, optional time column), .npz, .npy or .json</span>
+            <span class="dz-files" id="dz-files"></span>
+          </label>
+          <div class="fields">
+            <label>Age <input type="number" id="age" min="0" max="120" step="1" placeholder="optional"></label>
+            <label>Sex
+              <select id="sex"><option value="">unknown</option><option value="F">female</option><option value="M">male</option></select>
+            </label>
+            <label>Sampling rate (Hz) <input type="number" id="fs" min="50" max="10000" step="1" placeholder="if not in file"></label>
+            <button type="submit" class="primary" id="upload-btn" disabled>Analyze ECG</button>
+          </div>
+        </form>
+      </div>
+
+      <details class="options">
+        <summary>Model options</summary>
+        <div class="fields">
+          <label>Model <select id="model-select"><option value="">Automatic</option></select></label>
+          <label class="check"><input type="checkbox" id="use-demo-demographics" checked> Give the model the demo patient's age and sex</label>
+        </div>
+      </details>
+    </section>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div id="warnings" class="warnings" hidden></div>
+
+    <section id="results" class="results" hidden>
+      <section class="card ecg-card" aria-labelledby="ecg-title">
+        <div class="card-head">
+          <h2 id="ecg-title">2 &middot; The 10-second ECG</h2>
+          <label class="check toggle"><input type="checkbox" id="saliency-toggle" checked> Show where the model looked</label>
+        </div>
+        <div class="chips" id="ecg-chips"></div>
+        <div class="ecg-wrap"><canvas id="ecg-canvas" role="img" aria-label="ECG tracing"></canvas></div>
+        <p class="caption" id="ecg-caption"></p>
+      </section>
+
+      <div class="twin-grid">
+        <section class="card heart-card" aria-labelledby="current-title">
+          <div class="card-head">
+            <h2 id="current-title">3 &middot; Current heart <span class="sub">estimated profile</span></h2>
+            <button class="ghost small" id="anim-toggle" aria-pressed="true">Pause</button>
+          </div>
+          <div class="heart-layout">
+            <figure class="heart-figure">
+              <svg id="heart-svg" viewBox="0 0 320 360" role="img" aria-labelledby="heart-desc"><title id="heart-desc">Schematic of the estimated heart</title></svg>
+              <figcaption>Drawn to scale from the estimates. Gray outline: a typical healthy heart.</figcaption>
+            </figure>
+            <div class="measure-col">
+              <div class="legend" aria-hidden="true">
+                <span><i class="lg-dot"></i>CardioTwin estimate</span>
+                <span><i class="lg-int"></i>90% interval</span>
+                <span><i class="lg-truth"></i>Actual echo</span>
+                <span><i class="lg-normal"></i>Normal range</span>
+              </div>
+              <ul id="measure-list" class="measure-list"></ul>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-col">
+          <section class="card risk-card" aria-labelledby="risk-title">
+            <h2 id="risk-title">Structural abnormality</h2>
+            <div id="risk-body"></div>
+          </section>
+          <section class="card future-card" aria-labelledby="future-title">
+            <h2 id="future-title">4 &middot; Future heart</h2>
+            <div id="future-body"></div>
+          </section>
+        </aside>
+      </div>
+
+      <section class="card about-card" aria-labelledby="about-title">
+        <h2 id="about-title">About this estimate</h2>
+        <div id="about-body" class="about-grid"></div>
+      </section>
+    </section>
+
+    <section id="empty" class="card empty" hidden>
+      <h2>No model installed yet</h2>
+      <p>Train one on the open MUSIC dataset:</p>
+      <pre><code>cardiotwin download-music
+cardiotwin build-music
+cardiotwin experiment configs/music.yaml
+cardiotwin serve</code></pre>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><strong>CardioTwin is a research model.</strong> It is not a medical device, has not been clinically validated, and must not be used to diagnose or treat anyone. If you have health concerns, talk to a clinician.</p>
+    <p id="attribution" class="muted"></p>
+  </footer>
+  <script src="/static/app.js" type="module"></script>
+</body>
+</html>
