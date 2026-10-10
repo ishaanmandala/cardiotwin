@@ -116,41 +116,28 @@ take up to a minute). Your browser then opens the dashboard by itself; if it doe
 your own computer, and closing it (or pressing Ctrl+C) stops the dashboard. Nothing is sent over
 the internet; it all runs locally.
 
-What you see, top to bottom:
+**Pick a person** at the top: eight real people from the MUSIC study whom the AI never saw while
+it was learning (their real heart-scan results are shown so you can check the AI), or the
+**Upload an ECG** card for your own file. Then explore the five tabs:
 
-1. **Choose an ECG.** Eight *demo patients*: real people from the MUSIC study whom the model
-   never saw during training. Click any of them.
-2. **The 10-second ECG**, drawn on ECG paper (25 mm/s, 10 mm/mV). These are X, Y and Z leads,
-   the type of ECG the bundled model was trained on. Chips above it show the heart rate, the
-   QRS width and whether the rhythm is regular. The orange shading shows **where the model
-   looked** to estimate the ejection fraction; untick "Show where the model looked" to hide it.
-3. **Current heart.** On the left, an animated heart drawn *to scale* from the estimates. The
-   grey outline is a typical healthy heart, so you can see whether the chambers look enlarged.
-   On the right, one row per echo measurement:
-   * the **blue dot** is CardioTwin's estimate and the **black line** its 90% range (the model
-     is 90% sure the true value is inside it);
-   * the **green band** is the normal range for that person's sex;
-   * the **orange diamond** is the patient's *actual* echo result (demo patients only), so you
-     can see how close the estimate was;
-   * the coloured badge says normal / mildly / moderately / severely abnormal, using the
-     American Society of Echocardiography's cut-offs.
-4. **Structural abnormality** sums it up as LOW / MODERATE / HIGH.
-5. **Future heart.** The estimated risk of heart-failure death or a heart transplant within
-   4 years. It is only meaningful for people similar to the training group (adults with
-   chronic heart failure).
-6. **About this estimate.** How accurate the model was on patients it never saw, and what to
-   keep in mind.
+| Tab | What it shows |
+|---|---|
+| **Overview** | The big picture in one sentence ("CardioTwin thinks the heart's pump may be weak..."), an animated heart drawn to scale next to the grey outline of a typical heart, a *reality check* against the real scan, and four tiles: a **pumping-strength gauge**, **heart size vs a typical heart**, **wall thickness** and the **future outlook**. Click any tile to jump to its details. |
+| **Heart** | A bigger animated twin with labels, and one card per measurement: the AI's estimate (purple dot), its likely range (dark line), the healthy range (green band) and the real scan (orange diamond). Each card says in plain words what the measurement is, how sure the AI is, and has a "Why does this matter?" section. |
+| **ECG** | The 10-second ECG on ECG paper, with heart rate, QRS width and rhythm explained, a 30-second "how to read an ECG" guide, and which parts of the heartbeat the AI paid attention to (shaded on the trace). |
+| **Future** | The estimated chance of a serious heart-failure event within 4 years, shown as a number, as 100 little figures, and compared with everyone in the study. |
+| **How it works** | How CardioTwin works in four steps, how accurate it is (in everyday words), what to keep in mind, a glossary, and a button to download the numbers. |
 
 Things to try:
-* Click through several demo patients and compare the blue dots with the orange diamonds.
-  Some will be close and some far off: that is an honest picture of a research model.
-* Open **Model options** and untick "Give the model the demo patient's age and sex". This
-  switches to the ECG-only model. Do the estimates change much?
-* Click **Theme** at the top right to switch between light and dark.
-* Click **Download estimate (JSON)** to save the numbers.
-* Click **Upload your own**, choose `examples/ptbxl_lbbb.csv` from the `cardiotwin` folder,
-  enter age `81` and sex `female`, then click **Analyze ECG**. This is a standard 12-lead ECG,
-  so a yellow note explains that it was converted to X/Y/Z leads first.
+* Click through several people and compare the AI's purple dots with the real scan's orange
+  diamonds. Some are close and some are far off: an honest picture of a research model.
+* Flip the **Medical terms** switch (top right) to see the medical names and official
+  categories (e.g. "LV ejection fraction: moderately reduced") instead of plain English.
+* Untick **Use age & sex** to switch to the ECG-only model. Do the estimates change much?
+* Click the round button next to the switch to change between automatic, light and dark themes.
+* Click **Upload an ECG**, choose `examples/ptbxl_lbbb.csv` from the `cardiotwin` folder, enter
+  age `81` and sex `female`, then click **Analyse ECG**. This is a standard 12-lead ECG, so a
+  yellow note explains that it was converted to X/Y/Z leads first.
 
 To stop the dashboard, click the terminal and press **Ctrl+C**.
 
@@ -218,7 +205,7 @@ cardiotwin train --store data/processed/music --targets lvef --epochs 10 --out m
 ```
 This splits patients into train / validation / test groups (by *patient*, never by ECG),
 trains a network to predict EF, and prints its error on the test patients. Run `cardiotwin
-serve` again: "CardioTwin (lvef)" now appears under **Model options -> Model**.
+serve` again: "CardioTwin (lvef)" now appears in the **AI model** menu next to "Pick a person".
 
 **9.3 Run the full research protocol** (1-2 hours on a laptop; you can leave it running):
 ```bash

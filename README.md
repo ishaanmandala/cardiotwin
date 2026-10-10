@@ -11,7 +11,16 @@ later (MIMIC-IV).
 > **Research software. Not a medical device.** CardioTwin has not been clinically
 > validated and must not be used to diagnose or treat anyone.
 
-![CardioTwin dashboard](docs/img/dashboard-light.png)
+![CardioTwin dashboard: overview tab](docs/img/dashboard-overview.webp)
+
+The dashboard explains everything in plain English (flip the **Medical terms** switch for the
+clinical names) across five tabs:
+
+| Heart | ECG | Future |
+|---|---|---|
+| ![Heart tab](docs/img/dashboard-heart.webp) | ![ECG tab](docs/img/dashboard-ecg.webp) | ![Future tab](docs/img/dashboard-future.webp) |
+
+Dark mode is built in: [screenshot](docs/img/dashboard-dark.webp).
 
 ## Results so far (real data: MUSIC, 685 heart-failure patients)
 

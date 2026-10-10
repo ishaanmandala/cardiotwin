@@ -4,125 +4,204 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CardioTwin</title>
-  <meta name="description" content="CardioTwin estimates what an echocardiogram would show from a 10-second ECG. Research model, not for clinical use.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23c62f3a' d='M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z'/%3E%3C/svg%3E">
+  <meta name="description" content="CardioTwin estimates what a heart ultrasound (echocardiogram) would show from a 10-second ECG. Research model, not for medical use.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23ff3d6e' d='M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z"/><path class="logo-trace" d="M4 16h6l2-4 3 9 3-12 2 7h8"/></svg>
-      <span class="brand-name">CardioTwin</span>
-      <span class="brand-version">v0.1</span>
+  <header class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-bar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path class="logo-heart" d="M16 28s-11-7-11-15a6 6 0 0 1 11-3.3A6 6 0 0 1 27 13c0 8-11 15-11 15z"/><path class="logo-trace" d="M4 16h6l2-4 3 9 3-12 2 7h8"/></svg>
+        <span class="brand-name">CardioTwin</span>
+        <span class="brand-version">v0.1</span>
+      </div>
+      <div class="hero-actions">
+        <label class="switch" title="Show the medical names and categories">
+          <input type="checkbox" id="medical-toggle">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span>Medical terms</span>
+        </label>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" title="Theme"></button>
+      </div>
     </div>
-    <p class="tagline">What would the echocardiogram show? Estimated from a 10-second ECG.</p>
-    <div class="research-badge" role="note"><span aria-hidden="true">&#9888;</span> Research model &middot; not for clinical use</div>
-    <button class="ghost small" id="theme-toggle" type="button" aria-label="Switch colour theme">Theme: auto</button>
+    <div class="hero-copy">
+      <h1>What would a heart scan show?</h1>
+      <p>CardioTwin reads a <strong>10-second ECG</strong> (the heart's electrical signal) and builds a <strong>digital twin</strong> of the heart: an estimate of what an echocardiogram, an ultrasound scan of the heart, would see.</p>
+      <div class="research-pill" role="note"><span aria-hidden="true">&#9888;</span> Research project &middot; not for medical decisions</div>
+    </div>
+    <svg class="hero-ecg" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
+      <path class="hero-ecg-base" d="M0 70 H160 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H440 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H720 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H1000 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H1200"/>
+      <path class="hero-ecg-pulse" d="M0 70 H160 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H440 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H720 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H1000 l10 -6 l10 6 h20 l6 8 l10 -62 l10 74 l8 -20 h34 q16 -18 32 0 H1200"/>
+    </svg>
   </header>
 
   <main id="main">
-    <section class="card input-card" aria-labelledby="input-title">
-      <div class="card-head">
-        <h2 id="input-title">1 &middot; Choose an ECG</h2>
-        <div class="segmented" role="tablist" aria-label="ECG source">
-          <button role="tab" id="tab-demo" aria-selected="true" aria-controls="panel-demo">Demo patients</button>
-          <button role="tab" id="tab-upload" aria-selected="false" aria-controls="panel-upload">Upload your own</button>
+    <section class="card picker" aria-labelledby="picker-title">
+      <div class="picker-head">
+        <div>
+          <h2 id="picker-title"><span class="step">1</span> Pick a person</h2>
+          <p class="muted">Real ECGs from people the AI never saw while it was learning. Their real heart-scan results are shown so you can check the AI. Or upload your own ECG.</p>
         </div>
-      </div>
-
-      <div id="panel-demo" role="tabpanel" aria-labelledby="tab-demo">
-        <p class="hint">Real ECGs from patients the model never saw during training. Their actual echo results are shown next to CardioTwin's estimate so you can judge it.</p>
-        <div id="demo-list" class="demo-list" aria-live="polite"></div>
-      </div>
-
-      <div id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" hidden>
-        <form id="upload-form" class="upload-form">
-          <label class="dropzone" id="dropzone">
-            <input type="file" id="file-input" name="files" multiple accept=".hea,.dat,.csv,.txt,.npz,.npy,.json">
-            <span class="dz-title">Drop ECG files here or <u>browse</u></span>
-            <span class="dz-sub">WFDB (.hea + .dat), CSV (one column per lead, optional time column), .npz, .npy or .json</span>
-            <span class="dz-files" id="dz-files"></span>
+        <div class="picker-options">
+          <label class="switch small" title="Let the AI use the person's age and sex">
+            <input type="checkbox" id="use-demo-demographics" checked>
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            <span>Use age &amp; sex</span>
           </label>
-          <div class="fields">
-            <label>Age <input type="number" id="age" min="0" max="120" step="1" placeholder="optional"></label>
-            <label>Sex
-              <select id="sex"><option value="">unknown</option><option value="F">female</option><option value="M">male</option></select>
-            </label>
-            <label>Sampling rate (Hz) <input type="number" id="fs" min="50" max="10000" step="1" placeholder="if not in file"></label>
-            <button type="submit" class="primary" id="upload-btn" disabled>Analyze ECG</button>
-          </div>
-        </form>
-      </div>
-
-      <details class="options">
-        <summary>Model options</summary>
-        <div class="fields">
-          <label>Model <select id="model-select"><option value="">Automatic</option></select></label>
-          <label class="check"><input type="checkbox" id="use-demo-demographics" checked> Give the model the demo patient's age and sex</label>
+          <label class="select-label">AI model
+            <select id="model-select"><option value="">Automatic</option></select>
+          </label>
         </div>
-      </details>
+      </div>
+      <div class="picker-row" id="demo-list" aria-live="polite"></div>
     </section>
 
     <div id="status" class="status" role="status" aria-live="polite"></div>
-    <div id="warnings" class="warnings" hidden></div>
+    <div id="warnings" class="callout" hidden></div>
 
     <section id="results" class="results" hidden>
-      <section class="card ecg-card" aria-labelledby="ecg-title">
-        <div class="card-head">
-          <h2 id="ecg-title">2 &middot; The 10-second ECG</h2>
-          <label class="check toggle"><input type="checkbox" id="saliency-toggle" checked> Show where the model looked</label>
-        </div>
-        <div class="chips" id="ecg-chips"></div>
-        <div class="ecg-wrap"><canvas id="ecg-canvas" role="img" aria-label="ECG tracing"></canvas></div>
-        <p class="caption" id="ecg-caption"></p>
-      </section>
+      <nav class="tabs" role="tablist" aria-label="Result views">
+        <button role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true" data-tab="overview">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6V4H4zm10 7h6V11h-6zM4 20h6v-4H4zm10-11h6V4h-6z"/></svg>Overview</button>
+        <button role="tab" id="tab-heart" aria-controls="panel-heart" aria-selected="false" data-tab="heart" tabindex="-1">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/></svg>Heart</button>
+        <button role="tab" id="tab-ecg" aria-controls="panel-ecg" aria-selected="false" data-tab="ecg" tabindex="-1">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h5l2-5 3 10 3-12 2 7h5" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>ECG</button>
+        <button role="tab" id="tab-future" aria-controls="panel-future" aria-selected="false" data-tab="future" tabindex="-1">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8v6h-2V9.4l-6 6-4-4-4.6 4.6z"/></svg>Future</button>
+        <button role="tab" id="tab-about" aria-controls="panel-about" aria-selected="false" data-tab="about" tabindex="-1">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>How it works</button>
+      </nav>
 
-      <div class="twin-grid">
-        <section class="card heart-card" aria-labelledby="current-title">
-          <div class="card-head">
-            <h2 id="current-title">3 &middot; Current heart <span class="sub">estimated profile</span></h2>
-            <button class="ghost small" id="anim-toggle" aria-pressed="true">Pause</button>
+      <!-- OVERVIEW -->
+      <section id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" class="panel">
+        <div class="overview-hero card">
+          <div class="ov-heart">
+            <svg class="heart-svg" viewBox="0 0 320 360" role="img" aria-label="Animated drawing of the estimated heart"></svg>
+            <div class="ov-heart-legend"><span class="lg-ghost"></span> grey outline = a typical healthy heart</div>
           </div>
-          <div class="heart-layout">
-            <figure class="heart-figure">
-              <svg id="heart-svg" viewBox="0 0 320 360" role="img" aria-labelledby="heart-desc"><title id="heart-desc">Schematic of the estimated heart</title></svg>
-              <figcaption>Drawn to scale from the estimates. Gray outline: a typical healthy heart.</figcaption>
-            </figure>
-            <div class="measure-col">
-              <div class="legend" aria-hidden="true">
-                <span><i class="lg-dot"></i>CardioTwin estimate</span>
-                <span><i class="lg-int"></i>90% interval</span>
-                <span><i class="lg-truth"></i>Actual echo</span>
-                <span><i class="lg-normal"></i>Normal range</span>
-              </div>
-              <ul id="measure-list" class="measure-list"></ul>
+          <div class="ov-copy">
+            <div class="eyebrow" id="ov-eyebrow">The big picture</div>
+            <h2 class="ov-headline" id="ov-headline"></h2>
+            <ul class="ov-points" id="ov-points"></ul>
+            <div class="reality" id="ov-reality" hidden></div>
+            <div class="ov-actions">
+              <button class="btn primary" type="button" data-goto="heart">Explore the heart &rarr;</button>
+              <button class="btn ghost" type="button" data-goto="ecg">See the ECG</button>
             </div>
           </div>
-        </section>
-
-        <aside class="side-col">
-          <section class="card risk-card" aria-labelledby="risk-title">
-            <h2 id="risk-title">Structural abnormality</h2>
-            <div id="risk-body"></div>
-          </section>
-          <section class="card future-card" aria-labelledby="future-title">
-            <h2 id="future-title">4 &middot; Future heart</h2>
-            <div id="future-body"></div>
-          </section>
-        </aside>
-      </div>
-
-      <section class="card about-card" aria-labelledby="about-title">
-        <div class="card-head">
-          <h2 id="about-title">About this estimate</h2>
-          <button class="ghost small" id="download-json" type="button">Download estimate (JSON)</button>
         </div>
-        <div id="about-body" class="about-grid"></div>
+        <div class="tiles" id="ov-tiles"></div>
+      </section>
+
+      <!-- HEART -->
+      <section id="panel-heart" role="tabpanel" aria-labelledby="tab-heart" class="panel" hidden>
+        <div class="heart-layout">
+          <aside class="card heart-stage">
+            <div class="card-title-row">
+              <h2>The digital twin</h2>
+              <button class="chip-btn" id="anim-toggle" type="button" aria-pressed="true">Pause</button>
+            </div>
+            <svg class="heart-svg heart-big" data-callouts="1" viewBox="0 0 430 370" role="img" aria-label="Detailed drawing of the estimated heart"></svg>
+            <p class="muted small">Drawn to scale from the estimates and beating at the ECG's heart rate. The grey outline is a typical healthy heart, for comparison.</p>
+            <div class="legend">
+              <span><i class="lg-dot"></i>AI estimate</span>
+              <span><i class="lg-int"></i>Likely range</span>
+              <span><i class="lg-truth"></i>Real heart scan</span>
+              <span><i class="lg-normal"></i>Healthy range</span>
+            </div>
+          </aside>
+          <div class="measure-grid" id="measure-grid"></div>
+        </div>
+      </section>
+
+      <!-- ECG -->
+      <section id="panel-ecg" role="tabpanel" aria-labelledby="tab-ecg" class="panel" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <h2>The 10-second ECG</h2>
+            <label class="switch small"><input type="checkbox" id="saliency-toggle" checked><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span>Show where the AI looked</span></label>
+          </div>
+          <div class="ecg-facts" id="ecg-facts"></div>
+          <div class="ecg-wrap"><canvas id="ecg-canvas" role="img" aria-label="ECG tracing"></canvas></div>
+          <p class="muted small" id="ecg-caption"></p>
+        </div>
+        <div class="ecg-learn">
+          <div class="card">
+            <h3>How to read an ECG in 30 seconds</h3>
+            <svg class="beat-svg" viewBox="0 0 420 170" role="img" aria-label="One heartbeat with its P wave, QRS complex and T wave labelled">
+              <path class="beat-base" d="M10 110 H60"/>
+              <path class="beat-p" d="M60 110 q22 -26 44 0"/>
+              <path class="beat-base" d="M104 110 H140"/>
+              <path class="beat-qrs" d="M140 110 l8 10 l14 -98 l14 116 l8 -28"/>
+              <path class="beat-base" d="M184 110 H220"/>
+              <path class="beat-t" d="M220 110 q40 -50 80 0"/>
+              <path class="beat-base" d="M300 110 H410"/>
+              <text x="82" y="150" text-anchor="middle">P</text>
+              <text x="162" y="150" text-anchor="middle">QRS</text>
+              <text x="260" y="150" text-anchor="middle">T</text>
+            </svg>
+            <ul class="beat-list">
+              <li><i class="dot-p"></i><strong>P wave</strong> &ndash; the small bump: the upper chambers squeeze.</li>
+              <li><i class="dot-qrs"></i><strong>QRS</strong> &ndash; the tall spike: the main pumping chambers squeeze. Its height and width carry clues about muscle thickness and size.</li>
+              <li><i class="dot-t"></i><strong>T wave</strong> &ndash; the rounded bump: the main chambers recharge for the next beat.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Where the AI looked</h3>
+            <p class="muted small">Shaded areas on the ECG mark the parts that most changed the AI's pumping-strength estimate.</p>
+            <div class="stack-bar" id="attention-bar"></div>
+            <div class="stack-legend" id="attention-legend"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FUTURE -->
+      <section id="panel-future" role="tabpanel" aria-labelledby="tab-future" class="panel" hidden>
+        <div id="future-body"></div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="panel-about" role="tabpanel" aria-labelledby="tab-about" class="panel" hidden>
+        <div class="card">
+          <h2>How CardioTwin works</h2>
+          <ol class="steps">
+            <li><span class="step-icon">1</span><div><strong>Record</strong><p>A normal 10-second ECG: stickers on the skin pick up the heart's electrical signal.</p></div></li>
+            <li><span class="step-icon">2</span><div><strong>Clean</strong><p>The signal is tidied up: noise from muscles, breathing and power lines is filtered out.</p></div></li>
+            <li><span class="step-icon">3</span><div><strong>Read</strong><p>Five neural networks, trained on hundreds of real people who had both an ECG and a heart scan, each make an estimate. Their average is the answer; how much they disagree tells us how sure to be.</p></div></li>
+            <li><span class="step-icon">4</span><div><strong>Build the twin</strong><p>The estimates are compared with healthy ranges and drawn as a heart you can explore, plus a forecast for the next 4 years.</p></div></li>
+          </ol>
+        </div>
+        <div class="about-grid">
+          <div class="card" id="accuracy-card"></div>
+          <div class="card">
+            <h3>Good to know</h3>
+            <ul class="nice-list">
+              <li>This is a <strong>research project</strong>, not a medical test. Only a real echocardiogram can measure the heart.</li>
+              <li>The AI learned from adults with <strong>heart failure</strong> in Spain. For people with healthy hearts, children or other ECG machines, its estimates may be off, usually looking worse than reality.</li>
+              <li>Every number comes with a <strong>likely range</strong>. A wide range means the ECG didn't pin the answer down.</li>
+              <li>Worried about your heart? Talk to a doctor &ndash; not an AI.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Glossary</h3>
+          <div class="glossary" id="glossary"></div>
+        </div>
+        <div class="card download-row">
+          <div>
+            <h3>Take the numbers with you</h3>
+            <p class="muted small">Download everything CardioTwin estimated for this ECG as a JSON file.</p>
+          </div>
+          <button class="btn ghost" id="download-json" type="button">Download estimate (JSON)</button>
+        </div>
       </section>
     </section>
 
     <section id="empty" class="card empty" hidden>
-      <h2>No model installed yet</h2>
+      <h2>No AI model installed yet</h2>
       <p>Train one on the open MUSIC dataset:</p>
       <pre><code>cardiotwin download-music
 cardiotwin build-music
@@ -131,9 +210,37 @@ cardiotwin serve</code></pre>
     </section>
   </main>
 
+  <dialog id="upload-dialog" aria-labelledby="upload-title">
+    <form id="upload-form" method="dialog" class="upload-form">
+      <div class="dialog-head">
+        <h2 id="upload-title">Upload an ECG</h2>
+        <button class="icon-btn plain" type="button" id="upload-close" aria-label="Close">&times;</button>
+      </div>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="file-input" name="files" multiple accept=".hea,.dat,.csv,.txt,.npz,.npy,.json">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l5 5h-3v6h-4V8H7zm-8 14h16v4H4z"/></svg>
+        <span class="dz-title">Drop ECG files here or <u>browse</u></span>
+        <span class="dz-sub">CSV (one column per lead, optional time column), WFDB (.hea + .dat), .npz, .npy or .json. Try <code>examples/ptbxl_lbbb.csv</code>.</span>
+        <span class="dz-files" id="dz-files"></span>
+      </label>
+      <div class="fields">
+        <label>Age <input type="number" id="age" min="0" max="120" step="1" placeholder="optional"></label>
+        <label>Sex
+          <select id="sex"><option value="">not given</option><option value="F">female</option><option value="M">male</option></select>
+        </label>
+        <label>Sampling rate (Hz) <input type="number" id="fs" min="50" max="10000" step="1" placeholder="if not in file"></label>
+      </div>
+      <p class="muted small">Files are analysed on this computer and never leave it.</p>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="upload-cancel">Cancel</button>
+        <button class="btn primary" type="submit" id="upload-btn" disabled>Analyse ECG</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="footer">
-    <p><strong>CardioTwin is a research model.</strong> It is not a medical device, has not been clinically validated, and must not be used to diagnose or treat anyone. If you have health concerns, talk to a clinician.</p>
-    <p id="attribution" class="muted"></p>
+    <p><strong>CardioTwin is a research model.</strong> It is not a medical device, has not been clinically validated, and must not be used to diagnose or treat anyone. If you have health concerns, talk to a doctor.</p>
+    <p id="attribution" class="muted small"></p>
   </footer>
   <script src="/static/app.js" type="module"></script>
 </body>
