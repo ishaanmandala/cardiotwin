@@ -77,6 +77,8 @@ def test_cli_synth_plot_and_predict(tmp_path, tiny_model_dir, capsys):
     main(["predict", "--demo", "demo01", "--models", str(tiny_model_dir.parent), "--json"])
     body = json.loads(capsys.readouterr().out)
     assert body["profile"]["current"][0]["truth"] == 30.0
+    with pytest.raises(SystemExit, match="Available: demo01"):
+        main(["predict", "--demo", "demo99", "--models", str(tiny_model_dir.parent)])
 
 
 def test_mimic_cli_on_synthetic_tree(tmp_path):

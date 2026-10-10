@@ -60,8 +60,9 @@ def cmd_build_music(a) -> None:
 
     cohort = music_cohort(a.raw)
     log.info("MUSIC cohort: %d patients with a high-resolution ECG", len(cohort))
+    # MUSIC records Z pointing forwards; remember it so 12-lead uploads are converted correctly later.
     build_signal_store(cohort, a.raw, a.out, VCG_LEADS, PreprocessConfig(fs=a.fs), store_seconds=a.seconds,
-                       workers=a.workers)
+                       workers=a.workers, vcg_z_anterior=True)
     log.info("Signal store written to %s", a.out)
 
 
@@ -181,8 +182,10 @@ def cmd_train(a) -> None:
     for t, mt in metrics.items():
         print(f"{t:>12}: n={mt.get('n')}  MAE={mt.get('mae', float('nan')):.2f}  r={mt.get('pearson_r', float('nan')):.3f}")
     if a.out:
+        z_anterior = store.meta.get("vcg_z_anterior", bool((store.cohort.get("source") == "MUSIC").any()))
         save_checkpoint(a.out, [m], {"name": Path(a.out).name, "title": f"CardioTwin ({', '.join(a.targets)})",
                                      "leads": store.leads, "preprocess": store.meta["preprocess"],
+                                     "vcg_z_anterior": z_anterior,
                                      "test_metrics": {t: {k: mt.get(k) for k in ("n", "mae", "pearson_r", "r2")}
                                                       for t, mt in metrics.items()}})
         print(f"Saved model to {a.out}")
@@ -204,7 +207,12 @@ def cmd_predict(a) -> None:
 
     reg = ModelRegistry(a.models)
     if a.demo:
-        ecg = reg.get(a.model).load_demo(a.demo)
+        # Demo ECGs ship with the bundled models; any model can be run on them.
+        source = next((p for p in reg.models.values() if any(d["id"] == a.demo for d in p.demo_ecgs())), None)
+        if source is None:
+            available = sorted({d["id"] for p in reg.models.values() for d in p.demo_ecgs()})
+            sys.exit(f"No demo ECG called '{a.demo}' in {a.models}. Available: {', '.join(available) or 'none'}")
+        ecg = source.load_demo(a.demo)
         truth = ecg.meta.get("truth")
         age = a.age if a.age is not None else ecg.meta.get("age")
         sex = a.sex or ecg.meta.get("sex")

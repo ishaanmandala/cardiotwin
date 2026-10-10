@@ -51,6 +51,8 @@ What this means, honestly:
 
 ## Quick start
 
+New to this? Follow the **[step-by-step tutorial](docs/TUTORIAL.md)** (install, dashboard tour, your own ECGs, reproducing the research).
+
 ```bash
 git clone https://github.com/ishaanmandala/cardiotwin && cd cardiotwin
 python -m venv .venv && source .venv/bin/activate
