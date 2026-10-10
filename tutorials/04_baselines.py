@@ -27,7 +27,7 @@ train, test = rows[rows.split == "train"], rows[rows.split == "test"]
 print("Measuring ECG features (heart rate, QRS width, ...) ...")
 f_train = features_for_rows(store.signals, train["store_row"], store.fs, 2500)
 f_test = features_for_rows(store.signals, test["store_row"], store.fs, 2500)
-print("Example features for one patient:", dict(zip(FEATURE_NAMES, np.round(f_test[0], 1))))
+print("Example features for one patient:", {k: round(float(v), 1) for k, v in zip(FEATURE_NAMES, f_test[0])})
 
 y_train = train["lvef"].to_numpy(float)
 models = {

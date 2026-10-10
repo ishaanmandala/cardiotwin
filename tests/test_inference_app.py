@@ -125,3 +125,22 @@ def test_app_without_models(tmp_path):
     c = TestClient(create_app(tmp_path / "empty"))
     assert c.get("/api/models").json()["models"] == []
     assert c.post("/api/predict/demo", json={"demo_id": "demo01"}).status_code == 503
+
+
+BUNDLED = __import__("pathlib").Path(__file__).resolve().parents[1] / "models"
+
+
+@pytest.mark.skipif(not any(BUNDLED.glob("*/meta.json")), reason="no bundled models")
+def test_bundled_models_predict_their_demos():
+    reg = ModelRegistry(BUNDLED)
+    assert len(reg) >= 1
+    for name, p in reg.models.items():
+        demos = p.demo_ecgs()
+        assert demos, f"{name} has no demo ECGs"
+        ecg = p.load_demo(demos[0]["id"])
+        res = p.predict(ecg, age=ecg.meta.get("age"), sex=ecg.meta.get("sex"), truth=ecg.meta.get("truth"))
+        ef = res["predictions"]["lvef"]
+        assert 5 < ef["mean"] < 85 and 0 < ef["sd"] < 40
+        assert res["profile"]["future"]["risk"]["probability"] is not None
+        assert p.meta["test_metrics"]["lvef"]["n"] > 50
+        assert (p.path / "MODEL_CARD.md").exists()

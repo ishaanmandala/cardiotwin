@@ -148,6 +148,28 @@ def write_report(results: dict, cfg, out_dir: Path) -> Path:
         if t == "lvef":
             a("![roc](figures/roc_ef_le_40.png)")
         a("")
+    # ------------------------------------------------------------------ OOF
+    oof = results.get("oof") or {}
+    oof_order = [v for v in ("age_sex", "classic_ecg", "ecg_scratch", "ecg", "ecg_age_sex") if v in oof and t in oof[v]]
+    if oof_order:
+        n_dev = results["cohort"]["development"]["patients"]
+        extra = [x for x in ("lvedd", "lvesd", "la_diam", "lv_mass") if x in cfg.targets]
+        a(f"### Cross-validated results on the {n_dev} development patients")
+        a("")
+        a(f"Out-of-fold predictions from the {cfg.folds}-fold cross-validation: every development patient is predicted "
+          "by a model that never saw them. With ~4x more patients than the test set these estimates are more stable, "
+          "but they were also used to choose settings, so the test set above remains the headline. CardioTwin rows "
+          f"average the {cfg.eval_windows} windows of each recording.")
+        a("")
+        a(f"| Model | {spec.label} MAE | {spec.label} r | AUROC EF <= 40% | " + " | ".join(
+            f"{target_spec(x).label} r" for x in extra) + " |")
+        a("|---|---|---|---|" + "---|" * len(extra))
+        for v in oof_order:
+            e = oof[v][t]
+            cells = [_f(oof[v].get(x, {}).get("pearson_r")) for x in extra]
+            a(f"| {VARIANT_TITLES[v]} | {_f(e.get('mae'), 1)} | {_f(e.get('pearson_r'))} | {_f(e.get('auroc_ef_le_40'))} | "
+              + " | ".join(cells) + " |")
+        a("")
     # ------------------------------------------------------------- level 10
     if main in ev:
         a("## Level 10 - The whole heart from one ECG")

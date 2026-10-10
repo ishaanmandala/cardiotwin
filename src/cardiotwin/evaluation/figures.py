@@ -169,7 +169,7 @@ def ecg_with_saliency(x: np.ndarray, sal: np.ndarray, fs: float, leads: list[str
 
 
 def leakage_bars(labels, maes, path, title):
-    fig, ax = _fig(6.0, 2.6)
+    fig, ax = _fig(7.2, 2.9)
     _style(ax, grid_axis="x")
     y = np.arange(len(labels))[::-1]
     ax.barh(y, maes, height=0.45, color=[SERIES[1], SERIES[0]][: len(labels)])
@@ -177,9 +177,9 @@ def leakage_bars(labels, maes, path, title):
         ax.text(v, yi, f"  {v:.1f}", va="center", fontsize=9, color=INK2)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=9, color=INK2)
-    ax.set_xlabel("Test-set EF error (MAE, %-points) - lower looks better")
+    ax.set_xlabel("Test EF error (MAE, %-points)")
     ax.set_xlim(0, max(maes) * 1.25)
-    ax.set_title(title, loc="left", fontsize=11)
+    fig.suptitle(title, x=0.02, ha="left", fontsize=11, color=INK)
     _save(fig, path)
 
 

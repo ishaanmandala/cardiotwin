@@ -234,6 +234,8 @@ class Experiment:
                 oof[f"{t}_true"] = y
             self.test_preds[name] = out
             self.oof_preds[name] = oof
+            out.to_csv(self.run_dir / f"test_predictions_{name}.csv", index=False)
+            oof.to_csv(self.run_dir / f"oof_predictions_{name}.csv", index=False)
 
     # ------------------------------------------------------------ evaluation
     def evaluate(self) -> None:
@@ -277,7 +279,31 @@ class Experiment:
                             pass
                 vres[t] = entry
             res[variant] = vres
+        self._evaluate_oof()
         self._compare()
+
+    def _evaluate_oof(self) -> None:
+        """Cross-validated (out-of-fold) metrics on all development patients: larger n than the test set."""
+        out = {}
+        for variant, oof in self.oof_preds.items():
+            vres = {}
+            for t in self.cfg.targets:
+                tc, pc = f"{t}_true", f"{t}_pred"
+                if tc not in oof or pc not in oof:
+                    continue
+                d = oof.dropna(subset=[tc, pc])
+                if len(d) < 5:
+                    continue
+                if target_spec(t).kind == "binary":
+                    vres[t] = binary_metrics(d[tc], d[pc])
+                else:
+                    m = regression_metrics(d[tc], d[pc])
+                    vres[t] = {k: m[k] for k in ("n", "mae", "pearson_r", "r2")}
+                    if t == "lvef":
+                        c = ef_classification_metrics(d[tc], d[pc], cutoffs=(40.0,))
+                        vres[t]["auroc_ef_le_40"] = c["ef_le_40"].get("auroc")
+            out[variant] = vres
+        self.results["oof"] = out
 
     def _compare(self) -> None:
         cfg = self.cfg
@@ -433,13 +459,24 @@ class Experiment:
         feats = [f"pred_{f}" for f in feats_src] + ["age", "sex_male"]
         cox = fit_cox(d[feats].to_numpy(float), T.to_numpy(), E.to_numpy(), feats)
         risks = cox.risk_at(d[feats].to_numpy(float), horizon)
-        test_eval = self.results.get("survival", {}).get("models", {}).get("CardioTwin (ECG) + age + sex", {})
+        # Test-set C-index of *this* variant's future model.
+        tp = aggregate_per_ecg(self.test_preds[variant], self.cfg.targets).set_index("ecg_id")
+        dt = self.test[["patient_id", "ecg_id", tcol, ecol, "age", "sex"]].copy()
+        for f in feats_src:
+            dt[f"pred_{f}"] = dt["ecg_id"].map(tp[f"{f}_pred"])
+        dt["sex_male"] = dt["sex"].map({"M": 1.0, "F": 0.0})
+        t_test = pd.to_numeric(dt[tcol], errors="coerce")
+        dt["T"] = np.minimum(t_test, horizon)
+        dt["E"] = ((pd.to_numeric(dt[ecol], errors="coerce") == 1) & (t_test <= horizon)).astype(int)
+        dt["_risk"] = cox.linear_predictor(dt[feats].to_numpy(float))
+        c_index = cluster_bootstrap(dt, lambda x: concordance_index(x["T"], x["E"], x["_risk"]),
+                                    n_boot=self.cfg.bootstrap, seed=self.cfg.seed)
         return {
             "type": "cox", "label": spec.get("label", "Future event risk"), "horizon_days": horizon,
             "population": spec.get("population", ""), "cox": cox.to_dict(),
             "risk_cutpoints": [float(np.quantile(risks, 1 / 3)), float(np.quantile(risks, 2 / 3))],
             "reference_risks": [float(q) for q in np.quantile(risks, np.linspace(0, 1, 101))],
-            "test_c_index": test_eval.get("c_index"),
+            "test_c_index": list(c_index),
         }
 
     # -------------------------------------------------------- explainability
@@ -543,9 +580,11 @@ class Experiment:
                                           "Every echo measurement from one 10-s ECG (test set)")
         if "leakage_demo" in self.results:
             ld = self.results["leakage_demo"]
-            figures.leakage_bars(["Record-level split (WRONG: same people in train and test)",
-                                  "Patient-level split (correct)"], [ld["leaky"]["mae"], ld["patient"]["mae"]],
-                                 self.fig_dir / "leakage_demo.png", "Level 8: how leakage flatters a model")
+            figures.leakage_bars(["Record-level split\n(wrong: same people\nin train and test)",
+                                  "Patient-level split\n(correct)"], [ld["leaky"]["mae"], ld["patient"]["mae"]],
+                                 self.fig_dir / "leakage_demo.png",
+                                 "Level 8: leakage makes the same model look 3x better than it is"
+                                 if ld["patient"]["mae"] > 2.5 * ld["leaky"]["mae"] else "Level 8: leakage flatters a model")
 
     # ----------------------------------------------------------------- export
     def export(self) -> None:
@@ -648,6 +687,34 @@ class Experiment:
                 "note": "From the held-out test set: the model never saw this patient during training.",
             }
             save_npz_ecg(ECG(clip.signal, clip.fs, clip.leads), out_dir / f"demo{i:02d}.npz", meta)
+
+    def rebuild_report(self) -> dict:
+        """Recompute statistics, figures and REPORT.md from saved predictions (no retraining).
+
+        Keeps the leakage demo, explainability and training details of the previous run.
+        """
+        old = json.loads((self.report_dir / "results.json").read_text())
+        self.prepare()
+        read = dict(dtype={"patient_id": str, "ecg_id": str})
+        for variant in self.cfg.variants:
+            self.test_preds[variant] = pd.read_csv(self.run_dir / f"test_predictions_{variant}.csv", **read)
+            self.oof_preds[variant] = pd.read_csv(self.run_dir / f"oof_predictions_{variant}.csv", **read)
+            self.members[variant] = []  # marks a trained variant (weights are not needed here)
+        self.run_baselines()
+        self.evaluate()
+        for key in ("leakage_demo", "explain", "training", "minutes_total"):
+            if key in old:
+                self.results[key] = old[key]
+        self.survival()
+        main = "ecg_age_sex" if "ecg_age_sex" in self.members else next(iter(self.members))
+        self.subgroups(main)
+        self.make_figures(main)
+        self.results["main_variant"] = main
+        (self.report_dir / "results.json").write_text(json.dumps(self.results, indent=2, default=_jd))
+        from .evaluation.report import write_report
+
+        write_report(self.results, self.cfg, self.report_dir)
+        return self.results
 
     # -------------------------------------------------------------------- run
     def run(self) -> dict:

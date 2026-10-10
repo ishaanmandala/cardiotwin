@@ -150,6 +150,16 @@ def cmd_experiment(a) -> None:
     Experiment(cfg).run()
 
 
+def cmd_report(a) -> None:
+    from .experiments import Experiment, ExperimentConfig
+
+    cfg = ExperimentConfig.from_yaml(a.config)
+    if cfg.name.startswith("music") and not cfg.limitations:
+        cfg.limitations = MUSIC_LIMITATIONS
+    Experiment(cfg).rebuild_report()
+    print(f"Rebuilt {Path(cfg.report_dir) / 'REPORT.md'}")
+
+
 def cmd_train(a) -> None:
     """Level 7 in one command: patient split, train one model, report test metrics, save checkpoint."""
     from .data.splits import patient_split
@@ -315,6 +325,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--quick", type=int, metavar="N_PATIENTS", default=None,
                    help="smoke-test: N patients, 2 folds, 3 epochs (outputs go to a 'quick' subfolder)")
     s.set_defaults(func=cmd_experiment)
+
+    s = sub.add_parser("report", help="Rebuild an experiment's report from saved predictions (no retraining)")
+    s.add_argument("config")
+    s.set_defaults(func=cmd_report)
 
     s = sub.add_parser("predict", help="Run CardioTwin on an ECG file and print the heart profile")
     s.add_argument("ecg", nargs="?", help="WFDB record / .csv / .npz / .json / .npy")

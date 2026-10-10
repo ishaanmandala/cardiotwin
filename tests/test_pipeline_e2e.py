@@ -34,7 +34,8 @@ def test_full_experiment_protocol(store, tmp_path):
     cfg = ExperimentConfig(
         name="synthetic", title="Synthetic test", store_dir=str(store.path), ecg_root=str(store.path.parent),
         run_dir=str(tmp_path / "run"), report_dir=str(tmp_path / "report"),
-        targets=["lvef", "lvedd", "la_diam"], folds=2, bootstrap=30, eval_windows=1,
+        targets=["lvef", "lvedd", "la_diam", "future_lvef", "delta_lvef", "ef_decline"], folds=2, bootstrap=30,
+        eval_windows=1,
         train={"epochs": 2, "width": 8, "crops_per_ecg": 1},
         survival={"time_col": "time_days", "event_col": "event_hf", "horizon_days": 1460,
                   "label": "HF event", "twin_features": ["lvef", "lvedd"]},
@@ -56,6 +57,13 @@ def test_full_experiment_protocol(store, tmp_path):
     demo = p.load_demo("demo01")
     out = p.predict(demo, age=demo.meta["age"], sex=demo.meta["sex"], truth=demo.meta["truth"])
     assert 0 <= out["profile"]["future"]["risk"]["probability"] <= 1
+    # Levels 12-13: longitudinal targets are evaluated and shown as the "future heart".
+    assert "auroc" in res["evaluation"]["ecg"]["ef_decline"]["single_window"]
+    assert "mae" in res["evaluation"]["ecg"]["delta_lvef"]["single_window"]
+    fut = {m["target"]: m for m in out["profile"]["future"]["measurements"]}
+    assert set(fut) == {"future_lvef", "delta_lvef", "ef_decline"}
+    assert 0 <= fut["ef_decline"]["value"] <= 1
+    assert "Significant EF decline" in report
 
 
 def test_cli_synth_plot_and_predict(tmp_path, tiny_model_dir, capsys):
