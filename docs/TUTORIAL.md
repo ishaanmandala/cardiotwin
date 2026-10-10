@@ -32,12 +32,17 @@ git --version
 ```
 On a Mac, use `python3` instead of `python` everywhere in this tutorial.
 
-You need Python **3.10 to 3.13** and any version of Git. If one is missing:
-* **Python:** download it from <https://www.python.org/downloads/>. On Windows, tick
+You need Python **3.10 to 3.13** and any version of Git. If one is missing or too old:
+* **Python:** download **Python 3.12** from <https://www.python.org/downloads/>. On Windows, tick
   **"Add python.exe to PATH"** on the first installer screen.
 * **Git:** download it from <https://git-scm.com/downloads> and accept the default options.
 
-Close the terminal and open a new one after installing, then run the two checks again.
+> **Mac users:** macOS comes with an old Python 3.9 built in, so `python3 --version` often says
+> `Python 3.9.6`. That is too old for CardioTwin. Install Python 3.12 from python.org (or
+> `brew install python@3.12` if you use Homebrew) and use the command **`python3.12`** in Part 3.
+
+Close the terminal and open a new one after installing, then run the checks again. On a Mac,
+`python3.12 --version` should now print `Python 3.12.x`.
 
 ## Part 2 - Download CardioTwin
 
@@ -57,7 +62,7 @@ never clash with anything else on your computer.
 
 **Mac / Linux:**
 ```bash
-python3 -m venv .venv
+python3.12 -m venv .venv      # or python3, if `python3 --version` already says 3.10 or newer
 source .venv/bin/activate
 ```
 
@@ -72,7 +77,12 @@ then repeat the activate line:
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-Your prompt now starts with `(.venv)`. That means the box is active.
+Your prompt now starts with `(.venv)`. That means the box is active. Check the box has a new
+enough Python, and update its installer (`pip`), which is often too old to install modern projects:
+```bash
+python --version                         # must say 3.10 or newer
+python -m pip install --upgrade pip
+```
 
 **Linux only** (skips about 3 GB of graphics-card files you don't need):
 ```bash
@@ -269,7 +279,9 @@ drives). The data use agreement forbids it, and `.gitignore` keeps them out of G
 | You see | Fix |
 |---|---|
 | `cardiotwin: command not found` / `not recognized` | The virtual environment isn't active. Run the activate line from Part 3 (you should see `(.venv)`). |
-| `python: command not found` (Mac) | Use `python3`. |
+| `python: command not found` (Mac) | Use `python3` (or `python3.12`). |
+| `File "setup.py" or "setup.cfg" not found. Directory cannot be installed in editable mode` | Your pip is too old, and usually so is your Python (the Mac's built-in 3.9). Install Python 3.12, then: `deactivate`, `rm -rf .venv`, `python3.12 -m venv .venv`, `source .venv/bin/activate`, `python -m pip install --upgrade pip`, `pip install -e ".[dev]"`. |
+| `requires a different Python: 3.9...` | Same fix: install Python 3.12 and recreate `.venv` with `python3.12 -m venv .venv`. |
 | `python` opens the Microsoft Store (Windows) | Reinstall Python from python.org and tick "Add python.exe to PATH". |
 | `running scripts is disabled` (Windows) | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then activate again. |
 | `address already in use` when starting the dashboard | Another copy is running. Close it, or use `cardiotwin serve --port 8001` and open <http://127.0.0.1:8001>. |

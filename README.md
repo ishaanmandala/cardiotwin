@@ -55,8 +55,9 @@ New to this? Follow the **[step-by-step tutorial](docs/TUTORIAL.md)** (install, 
 
 ```bash
 git clone https://github.com/ishaanmandala/cardiotwin && cd cardiotwin
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"            # Python 3.10+; installs PyTorch, wfdb, FastAPI, ...
+python3 -m venv .venv && source .venv/bin/activate   # needs Python 3.10+ (the Mac's built-in 3.9 is too old)
+python -m pip install --upgrade pip
+pip install -e ".[dev]"            # installs PyTorch, wfdb, FastAPI, ...
 
 cardiotwin serve                   # dashboard at http://127.0.0.1:8000 (bundled MUSIC model + demo ECGs)
 cardiotwin predict --demo demo03   # the same, in the terminal
