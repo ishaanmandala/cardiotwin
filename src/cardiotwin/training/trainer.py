@@ -232,16 +232,16 @@ def predict_windows(
     total_var = vars_a.mean(axis=0) + means_a.var(axis=0)
     rows = rows.reset_index(drop=True)
     row_idx = np.array([i for i, _ in index])
-    out = pd.DataFrame({
+    cols = {
         "patient_id": rows["patient_id"].to_numpy()[row_idx],
         "ecg_id": rows["ecg_id"].to_numpy()[row_idx],
         "window_start": [s for _, s in index],
-    })
+    }
     for j, t in enumerate(targets):
-        out[f"{t}_pred"] = mean[:, j]
-        out[f"{t}_sd"] = np.sqrt(total_var[:, j])
-        out[f"{t}_true"] = pd.to_numeric(rows[t], errors="coerce").to_numpy()[row_idx]
-    return out
+        cols[f"{t}_pred"] = mean[:, j]
+        cols[f"{t}_sd"] = np.sqrt(total_var[:, j])
+        cols[f"{t}_true"] = pd.to_numeric(rows[t], errors="coerce").to_numpy()[row_idx]
+    return pd.DataFrame(cols)
 
 
 def aggregate_per_ecg(window_preds: pd.DataFrame, targets: list[str]) -> pd.DataFrame:

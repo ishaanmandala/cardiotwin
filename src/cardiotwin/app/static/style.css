@@ -110,6 +110,7 @@ button, input, select { font: inherit; color: inherit; }
 .brand-name { font-weight: 750; font-size: 1.15rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .brand-version { color: var(--muted); font-size: 0.8rem; }
 .tagline { color: var(--ink-2); flex: 1; min-width: 220px; }
+#theme-toggle { white-space: nowrap; }
 .research-badge {
   background: var(--badge-bg); color: var(--badge-ink); border-radius: 999px;
   padding: 4px 12px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;

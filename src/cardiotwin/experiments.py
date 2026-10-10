@@ -580,7 +580,50 @@ class Experiment:
             }
             save_checkpoint(out, self.members[variant], meta)
             self._export_demos(out / "demo", int(spec.get("demo_ecgs", 8)))
+            (out / "MODEL_CARD.md").write_text(self._model_card(variant, meta))
             log.info("Exported %s", out)
+
+    def _model_card(self, variant: str, meta: dict) -> str:
+        cfg = self.cfg
+        c = self.results["cohort"]
+        lines = [
+            f"# Model card: {meta['title']}", "",
+            "## Intended use",
+            "Research and education: exploring whether a 10-second ECG carries information about cardiac "
+            "structure and function. **Not for clinical use**, not a medical device, not validated for any decision "
+            "about a patient.", "",
+            "## Inputs and outputs",
+            f"* Input: one or more 10-second windows of ECG leads {', '.join(meta['leads'])} (any sampling rate; "
+            f"resampled to {self.store.fs:.0f} Hz). " + ("Age and sex are also used." if variant == "ecg_age_sex"
+                                                        else "No other inputs."),
+            "* Output: " + ", ".join(target_spec(t).label for t in cfg.targets) + "; each with a predicted standard "
+            "deviation." + (" Plus a 4-year risk from a Cox model on the ECG-derived measurements." if meta.get("future_model") else ""),
+            f"* Architecture: ensemble of {cfg.folds} 1-D ResNets (one per cross-validation fold)"
+            + (", encoder pretrained on PTB-XL." if cfg.train.get("init_from") else "."), "",
+            "## Training data",
+            f"{cfg.dataset_title}. {cfg.dataset_description}",
+            f"Development set: {c['development']['patients']} patients; held-out test set: {c['test']['patients']} patients "
+            f"(patient-level split, stratified by {target_spec(cfg.primary_target).label}).", "",
+            "## Performance on held-out test patients (one 10-second window per patient)", "",
+            "| Measurement | n | MAE | Pearson r | R^2 |", "|---|---|---|---|---|",
+        ]
+        for t, m in meta["test_metrics"].items():
+            ts = target_spec(t)
+            if ts.kind == "regression" and m.get("mae") is not None:
+                lines.append(f"| {ts.label} | {m.get('n')} | {m['mae']:.1f} {ts.unit} | {m.get('pearson_r', float('nan')):.2f} | "
+                             f"{m.get('r2', float('nan')):.2f} |")
+        ef = meta["test_metrics"].get("lvef", {})
+        if ef.get("auroc_ef_le_40") is not None:
+            lines += ["", f"Detecting EF <= 40%: AUROC {ef['auroc_ef_le_40']:.2f}; EF <= 50%: AUROC {ef.get('auroc_ef_le_50', float('nan')):.2f}."]
+        fm = meta.get("future_model")
+        if fm and fm.get("test_c_index"):
+            ci = fm["test_c_index"]
+            lines += ["", f"Future risk ({fm['label']}, {fm['horizon_days'] / 365.25:.0f} years): test C-index {ci[0]:.2f} "
+                      f"(95% CI {ci[1]:.2f}-{ci[2]:.2f})."]
+        lines += ["", "Full results with confidence intervals: `reports/" + cfg.name + "/REPORT.md`.", "",
+                  "## Limitations", ""] + [f"* {x}" for x in (cfg.limitations or [])] + [
+                  "", "## Licence and attribution", meta.get("license_note") or "-", ""]
+        return "\n".join(lines)
 
     def _export_demos(self, out_dir: Path, n: int) -> None:
         if n <= 0 or not self.cfg.ecg_root:

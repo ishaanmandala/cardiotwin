@@ -24,18 +24,25 @@ folds: 5
 seed: 7
 eval_windows: 9               # odd, so the central 10-s window is included
 bootstrap: 1000
+# Hyperparameters were chosen on development fold 0 only (scripts/tune_music.py); the test
+# patients played no part. Pretraining on PTB-XL raised fold-0 EF r from 0.37 to 0.52.
 train:
   epochs: 40
   patience: 8
   batch_size: 64
-  lr: 0.002
+  lr: 0.001
   weight_decay: 0.01
   crops_per_ecg: 8
   width: 16
   kernel: 9
   dropout: 0.2
   window_s: 10.0
+  init_from: models/encoders/ptbxl-xyz.pt   # cardiotwin pretrain --leads xyz --vcg-z-anterior
+  encoder_lr_mult: 0.3
 variants:
+  ecg_scratch:                 # ablation B0: same network, no pretraining (its own best settings)
+    tabular: []
+    train: {init_from: null, lr: 0.002, encoder_lr_mult: 1.0}
   ecg: []
   ecg_age_sex: [age, sex]
 baselines: true

@@ -83,3 +83,32 @@ def test_mimic_cli_on_synthetic_tree(tmp_path):
     assert meta["leads"][:3] == ["I", "II", "III"] and meta["n_failed"] == 0
     sig = np.load(tmp_path / "proc" / "signals.npy", mmap_mode="r")
     assert sig.shape[1:] == (12, 2500) and np.isfinite(sig[:]).all()
+
+
+def test_pretrain_then_finetune(store, tmp_path):
+    import pandas as pd
+    import torch
+
+    from cardiotwin.data.store import SignalStore
+    from cardiotwin.pretrain import pretrain_encoder
+
+    # Fake a PTB-XL-style store from the synthetic one: labels, sex and the official folds.
+    rows = store.cohort.copy()
+    rows["dx_afib"] = (rows["rhythm"] == "atrial fibrillation").astype(int)
+    rows["is_male"] = (rows["sex"] == "M").astype(int)
+    rows["strat_fold"] = (pd.factorize(rows["patient_id"])[0] % 10) + 1
+    fake = SignalStore(signals=store.signals, cohort=rows, meta=store.meta, path=store.path)
+    enc = tmp_path / "enc.pt"
+    summary = pretrain_encoder(fake, ["dx_afib"], enc, epochs=1, width=8)
+    assert enc.exists() and enc.with_suffix(".json").exists()
+    assert summary["labels"] == ["dx_afib"] and summary["n_train"] > 0
+    usable = store.usable()
+    usable["split"] = patient_split(usable, seed=0)
+    tr, va = usable[usable.split == "train"], usable[usable.split == "val"]
+    cfg = TrainConfig(targets=["lvef"], epochs=1, width=8, init_from=str(enc), encoder_lr_mult=0.3)
+    m = train_model(store.signals, tr, va, cfg, window=2500, verbose=False)
+    assert m.best_epoch == 0
+    with pytest.raises(ValueError, match="width"):
+        train_model(store.signals, tr, va, TrainConfig(targets=["lvef"], epochs=1, width=16, init_from=str(enc)),
+                    window=2500, verbose=False)
+    assert torch.load(enc, weights_only=False)["model_config"]["width"] == 8

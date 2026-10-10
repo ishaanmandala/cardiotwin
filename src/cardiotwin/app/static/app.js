@@ -47,6 +47,8 @@ async function init() {
   });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => state.result && render(state.result));
   if (reducedMotion) $("#anim-toggle").textContent = "Animate";
+  setupTheme();
+  $("#download-json").addEventListener("click", downloadJSON);
 
   try {
     const { models } = await api("/api/models");
@@ -67,6 +69,37 @@ async function init() {
   } catch (err) {
     setStatus(`Could not reach the CardioTwin server: ${err.message}`, "error");
   }
+}
+
+function setupTheme() {
+  const order = ["auto", "light", "dark"];
+  let theme = "auto";
+  try { theme = localStorage.getItem("cardiotwin-theme") || "auto"; } catch (_) { /* storage blocked */ }
+  const apply = () => {
+    if (theme === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    $("#theme-toggle").textContent = `Theme: ${theme}`;
+    if (state.result) render(state.result);
+  };
+  $("#theme-toggle").addEventListener("click", () => {
+    theme = order[(order.indexOf(theme) + 1) % order.length];
+    try { localStorage.setItem("cardiotwin-theme", theme); } catch (_) { /* storage blocked */ }
+    apply();
+  });
+  apply();
+}
+
+function downloadJSON() {
+  if (!state.result) return;
+  const { ecg, explain, ...rest } = state.result;
+  const payload = { ...rest, explain: explain ? { target: explain.target, segments: explain.segments } : null,
+                    exported_at: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `cardiotwin-estimate-${state.activeDemo || "upload"}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function setupTabs() {

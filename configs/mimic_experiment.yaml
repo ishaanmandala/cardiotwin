@@ -1,0 +1,52 @@
+# Full CardioTwin protocol on MIMIC-IV (12-lead ECG -> echo), including Levels 12-13
+# (predicting the follow-up echo 6-12 months later).
+#
+#   cardiotwin download-ptbxl && cardiotwin pretrain --leads 12 --out models/encoders/ptbxl-12lead.pt
+#   cardiotwin build-mimic --config configs/mimic.yaml
+#   cardiotwin experiment configs/mimic_experiment.yaml
+#
+# MIMIC data are covered by a data use agreement: never commit data/, runs/ or per-patient outputs.
+name: mimic
+title: "CardioTwin on MIMIC-IV: echocardiogram estimates from a 10-second 12-lead ECG"
+dataset_title: "MIMIC-IV-ECG v1.0 + MIMIC-IV-Echo (PhysioNet, credentialed)"
+dataset_description: >-
+  10-second 12-lead ECGs (500 Hz) from Beth Israel Deaconess Medical Center paired with structured
+  echocardiogram measurements of the same patient within 24 hours.
+store_dir: data/processed/mimic
+ecg_root: null                # demo ECGs are NOT exported for MIMIC (data use agreement)
+run_dir: runs/mimic
+report_dir: reports/mimic
+primary_target: lvef
+targets: [lvef, lvedd, lvesd, ivsd, lvpwd, la_diam, lv_mass, aortic_root, future_lvef, delta_lvef, ef_decline]
+test_fraction: 0.15
+folds: 5
+seed: 0
+eval_windows: 1
+bootstrap: 1000
+train:
+  epochs: 30
+  patience: 6
+  batch_size: 128
+  lr: 0.002
+  crops_per_ecg: 1
+  width: 32
+  kernel: 9
+  dropout: 0.2
+  init_from: models/encoders/ptbxl-12lead.pt
+  encoder_lr_mult: 0.5
+variants:
+  ecg: []
+  ecg_age_sex: [age, sex]
+baselines: true
+leakage_demo: null            # MIMIC ECGs are single 10-s recordings; leakage across ECGs of one patient is
+                              # already prevented by the patient-level split
+survival: null
+subgroups: [sex, age_band]
+explain_n: 200
+export:
+  dir: models/mimic-12lead
+  variants: [ecg, ecg_age_sex]
+  demo_ecgs: 0
+  title: "CardioTwin (MIMIC-IV, 12-lead)"
+  description: Trained on MIMIC-IV-ECG paired with MIMIC-IV-Echo.
+  license_note: "Trained on MIMIC-IV (PhysioNet Credentialed Health Data License). Do not share patient-level data."

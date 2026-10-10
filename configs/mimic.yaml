@@ -1,0 +1,38 @@
+# Level 6: build the CardioTwin training table from MIMIC-IV (needs credentialed PhysioNet access).
+#
+#   cardiotwin build-mimic --config configs/mimic.yaml
+#
+# Then run the full protocol with configs/mimic_experiment.yaml.
+paths:
+  # MIMIC-IV-ECG v1.0 (open access): folder containing record_list.csv and files/
+  ecg_root: /path/to/physionet.org/files/mimic-iv-ecg/1.0
+  # MIMIC-IV-Echo (credentialed): the structured measurement table
+  echo_csv: /path/to/physionet.org/files/mimic-iv-echo/1.0.1/structured_measurement.csv
+  # MIMIC-IV hosp module (credentialed): for age and sex
+  patients_csv: /path/to/physionet.org/files/mimiciv/3.1/hosp/patients.csv.gz
+out: data/processed/mimic
+
+pairing:
+  max_hours: 24            # "ECG within 24 hours of echo"
+  direction: both          # or ecg_before_echo / ecg_after_echo
+  one_ecg_per_echo: true
+  followup_min_days: 180   # Level 12: a second echo 6-12 months later
+  followup_max_days: 365
+  followup_target_days: 270
+  decline_points: 10       # ef_decline = EF falls >= 10 points to below 50%
+  decline_below: 50
+
+targets: [lvef, lvedd, lvesd, ivsd, lvpwd, la_diam, rv_diam, lv_mass, aortic_root, stroke_volume, la_vol, tapse]
+
+# Column names are auto-detected. If your release names them differently, set them here.
+# The value column is looked up among: result, value, measurement_value, result_value, valuenum, ...
+echo_schema:
+  subject_col: subject_id
+  # study_col: measurement_id
+  # time_col: measurement_datetime
+  # name_col: measurement
+  # value_col: result
+  # unit_col: unit
+  # Add or re-prioritize measurement codes per target (first match wins within a study):
+  # measurement_map:
+  #   lvef: [biplane_lvef, lvef]

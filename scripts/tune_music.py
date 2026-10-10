@@ -32,12 +32,18 @@ dev["fold"] = patient_kfold(dev, 5, seed=SEED)
 tr, va = dev[dev.fold != 0], dev[dev.fold == 0]
 W = 2500
 
+ENC = "models/encoders/ptbxl-xyz.pt"
 grid = {
     "base_w16": {},
     "w8": {"width": 8},
     "w24_drop03": {"width": 24, "dropout": 0.3},
     "w16_lr1e-3_wd5e-2": {"lr": 1e-3, "weight_decay": 0.05},
     "w16_k15": {"kernel": 15},
+    "pre_lr1": {"init_from": ENC, "encoder_lr_mult": 1.0},
+    "pre_lr03": {"init_from": ENC, "encoder_lr_mult": 0.3},
+    "pre_lr03_lr1e-3": {"init_from": ENC, "encoder_lr_mult": 0.3, "lr": 1e-3},
+    "pre_lr03_lr5e-4": {"init_from": ENC, "encoder_lr_mult": 0.3, "lr": 5e-4},
+    "pre_frozen_lr1e-3": {"init_from": ENC, "encoder_lr_mult": 0.0, "lr": 1e-3},
 }
 only = sys.argv[1:] or list(grid)
 results = {}
@@ -55,4 +61,4 @@ for name in only:
     results[name] = res
     logging.info("%s: %s", name, res)
 print(json.dumps(results, indent=2))
-pd.DataFrame(results).T.to_csv("runs/music_tuning.csv")
+pd.DataFrame(results).T.to_csv(f"runs/music_tuning_{'_'.join(only)}.csv")

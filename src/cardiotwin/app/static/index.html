@@ -17,6 +17,7 @@
     </div>
     <p class="tagline">What would the echocardiogram show? Estimated from a 10-second ECG.</p>
     <div class="research-badge" role="note"><span aria-hidden="true">&#9888;</span> Research model &middot; not for clinical use</div>
+    <button class="ghost small" id="theme-toggle" type="button" aria-label="Switch colour theme">Theme: auto</button>
   </header>
 
   <main id="main">
@@ -112,7 +113,10 @@
       </div>
 
       <section class="card about-card" aria-labelledby="about-title">
-        <h2 id="about-title">About this estimate</h2>
+        <div class="card-head">
+          <h2 id="about-title">About this estimate</h2>
+          <button class="ghost small" id="download-json" type="button">Download estimate (JSON)</button>
+        </div>
         <div id="about-body" class="about-grid"></div>
       </section>
     </section>
