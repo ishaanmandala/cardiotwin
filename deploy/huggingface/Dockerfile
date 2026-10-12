@@ -8,13 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+# CPU-only PyTorch (~200 MB instead of ~3 GB of GPU libraries).
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 # Which code to deploy (change BRANCH to "main" once the code is merged there).
-ARG REPO=https://github.com/ishaanmandala/cardiotwin.git
+ARG REPO=https://github.com/ishaanmandala/cardiotwin
 ARG BRANCH=claude/cardiotwin-ecg-ef-model-urtqpe
-RUN git clone --depth 1 --branch ${BRANCH} ${REPO} /app && pip install /app
+ADD ${REPO}/archive/refs/heads/${BRANCH}.tar.gz /tmp/cardiotwin.tar.gz
+RUN mkdir /app && tar -xzf /tmp/cardiotwin.tar.gz -C /app --strip-components=1 && rm /tmp/cardiotwin.tar.gz \
+    && pip install /app
 
 # Hugging Face runs Spaces as user 1000.
 RUN useradd --create-home --uid 1000 user && chown -R user /app
