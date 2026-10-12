@@ -48,6 +48,10 @@ line to `ARG BRANCH=main`.
 **If the build fails:** open **Logs**, copy the red error lines and ask for help. The most common
 cause is a typo when pasting the Dockerfile.
 
+**Keep the GitHub repository public.** The Space downloads the code from GitHub while it builds;
+if the repository is private, that download fails. (Alternative for a private repository: use
+option B, or upload the code to the Space itself.)
+
 ---
 
 ## B. Any Docker host (Render, Railway, Fly.io, Cloud Run, your own server)
