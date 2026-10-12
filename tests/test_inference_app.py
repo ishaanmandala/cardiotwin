@@ -144,3 +144,34 @@ def test_bundled_models_predict_their_demos():
         assert res["profile"]["future"]["risk"]["probability"] is not None
         assert p.meta["test_metrics"]["lvef"]["n"] > 50
         assert (p.path / "MODEL_CARD.md").exists()
+
+
+def test_wfdb_header_cannot_point_outside_the_upload(client, tmp_path):
+    """A crafted header must not make the server read other files (path traversal)."""
+    ecg = _sim()
+    wfdb.wrsamp("evil", fs=500, units=["mV"] * 12, sig_name=ecg.leads, p_signal=ecg.signal.T.astype(float),
+                fmt=["16"] * 12, adc_gain=[1000.0] * 12, baseline=[0] * 12, write_dir=str(tmp_path))
+    header = (tmp_path / "evil.hea").read_text()
+    dat = (tmp_path / "evil.dat").read_bytes()
+    for target in ("../../../../etc/passwd", "/etc/passwd", "other.dat"):
+        bad = header.replace("evil.dat", target)
+        r = client.post("/api/predict", files=[("files", ("evil.hea", bad.encode(), "text/plain")),
+                                               ("files", ("evil.dat", dat, "application/octet-stream"))])
+        assert r.status_code == 422, target
+        assert "not uploaded" in r.json()["detail"] or "Invalid signal file name" in r.json()["detail"]
+
+
+def test_upload_limits(client):
+    big = b"0" * (26 * 1024 * 1024)
+    assert client.post("/api/predict", files=[("files", ("big.csv", big, "text/csv"))]).status_code == 413
+    many = [("files", (f"f{i}.csv", b"I\n0.1\n", "text/csv")) for i in range(11)]
+    assert client.post("/api/predict", files=many).status_code == 413
+
+
+def test_serve_reads_port_and_host_from_environment(monkeypatch):
+    from cardiotwin.cli import build_parser
+
+    monkeypatch.setenv("PORT", "7860")
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    args = build_parser().parse_args(["serve"])
+    assert args.port == 7860 and args.host == "0.0.0.0"

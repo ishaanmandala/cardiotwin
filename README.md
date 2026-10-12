@@ -134,6 +134,11 @@ cardiotwin report configs/music.yaml   # optional: rebuild the report from saved
 
 The report lands in `reports/music/REPORT.md`; the deployable models in `models/`.
 
+### Put it on a website
+
+Free on Hugging Face Spaces in about 10 minutes, or on any Docker host with the included
+`Dockerfile`: see **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+
 ### Run it on MIMIC-IV
 
 Follow [docs/MIMIC_ACCESS.md](docs/MIMIC_ACCESS.md) (credentialing, download, column

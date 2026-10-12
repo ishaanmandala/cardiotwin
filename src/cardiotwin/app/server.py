@@ -18,6 +18,7 @@ import math
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -131,12 +132,16 @@ def create_app(models_dir: str | Path = "models") -> FastAPI:
         model: str | None = Form(None),
     ):
         payload, total = {}, 0
+        if len(files) > 10:
+            raise HTTPException(413, "Too many files (10 max)")
         for f in files:
-            content = await f.read()
-            total += len(content)
-            if total > MAX_UPLOAD_BYTES:
-                raise HTTPException(413, "Upload too large (25 MB max)")
-            payload[Path(f.filename or "upload").name] = content
+            chunks = []
+            while chunk := await f.read(1 << 20):  # stop reading as soon as the limit is passed
+                total += len(chunk)
+                if total > MAX_UPLOAD_BYTES:
+                    raise HTTPException(413, "Upload too large (25 MB max)")
+                chunks.append(chunk)
+            payload[Path(f.filename or "upload").name] = b"".join(chunks)
         try:
             age_v = float(age) if age not in (None, "") else None
             fs_v = float(fs) if fs not in (None, "") else None
@@ -146,10 +151,11 @@ def create_app(models_dir: str | Path = "models") -> FastAPI:
             raise HTTPException(422, "age must be between 0 and 120")
         sex_v = sex if sex in ("M", "F") else None
         try:
-            ecg = load_ecg_from_files(payload, fs=fs_v)
+            ecg = await run_in_threadpool(load_ecg_from_files, payload, fs_v)
         except ECGFormatError as exc:
             raise HTTPException(422, str(exc)) from exc
-        return _predict(ecg, age_v, sex_v, model or None)
+        # Model inference is CPU-bound: run it off the event loop so other requests stay responsive.
+        return await run_in_threadpool(_predict, ecg, age_v, sex_v, model or None)
 
     @app.get("/")
     def index():

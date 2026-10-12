@@ -230,7 +230,7 @@ cardiotwin serve</code></pre>
         </label>
         <label>Sampling rate (Hz) <input type="number" id="fs" min="50" max="10000" step="1" placeholder="if not in file"></label>
       </div>
-      <p class="muted small">Files are analysed on this computer and never leave it.</p>
+      <p class="muted small">Your file is only used to make this estimate. It is not saved anywhere.</p>
       <div class="dialog-actions">
         <button class="btn ghost" type="button" id="upload-cancel">Cancel</button>
         <button class="btn primary" type="submit" id="upload-btn" disabled>Analyse ECG</button>
@@ -241,6 +241,7 @@ cardiotwin serve</code></pre>
   <footer class="footer">
     <p><strong>CardioTwin is a research model.</strong> It is not a medical device, has not been clinically validated, and must not be used to diagnose or treat anyone. If you have health concerns, talk to a doctor.</p>
     <p id="attribution" class="muted small"></p>
+    <p class="muted small">Open-source research project &middot; <a href="https://github.com/ishaanmandala/cardiotwin" target="_blank" rel="noopener">source code on GitHub</a></p>
   </footer>
   <script src="/static/app.js" type="module"></script>
 </body>

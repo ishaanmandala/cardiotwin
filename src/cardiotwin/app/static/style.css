@@ -386,6 +386,7 @@ dialog::backdrop { background: rgba(13, 11, 20, .55); backdrop-filter: blur(3px)
 .fields input, .fields select { min-width: 140px; }
 
 .empty pre { background: var(--card-2); padding: 12px; border-radius: 12px; overflow-x: auto; }
+.footer a { color: var(--violet-ink); }
 .footer { max-width: 1240px; margin: 0 auto; padding: 12px 28px 36px; display: grid; gap: 6px; font-size: .86rem; color: var(--ink-2); }
 
 /* ------------------------------------------------------------- responsive */

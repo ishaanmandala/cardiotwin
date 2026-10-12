@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -283,6 +284,8 @@ def cmd_serve(a) -> None:
 
 
 def default_models_dir() -> str:
+    if os.environ.get("CARDIOTWIN_MODELS"):
+        return os.environ["CARDIOTWIN_MODELS"]
     here = Path(__file__).resolve()
     for cand in (Path.cwd() / "models", here.parents[2] / "models"):
         if cand.exists():
@@ -392,8 +395,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("serve", help="Start the CardioTwin dashboard")
     s.add_argument("--models", default=default_models_dir())
-    s.add_argument("--host", default="127.0.0.1")
-    s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"),
+                   help="address to listen on (0.0.0.0 = reachable from other machines; env HOST)")
+    s.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="port (env PORT)")
     s.add_argument("--no-browser", action="store_true", help="do not open the dashboard in a browser automatically")
     s.set_defaults(func=cmd_serve)
     return p

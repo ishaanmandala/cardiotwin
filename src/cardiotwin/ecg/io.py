@@ -298,6 +298,36 @@ def read_json_ecg(data: dict) -> ECG:
 # --------------------------------------------------------------------------------------
 
 
+def _check_wfdb_header(header: bytes, uploaded: set[str]) -> None:
+    """Refuse headers that point at files other than the ones uploaded.
+
+    A WFDB header names its signal file(s). On a public server, a crafted header
+    could name a path such as ``../../etc/passwd``; only plain file names that
+    were part of the same upload are allowed.
+    """
+    try:
+        text = header.decode("latin-1")
+    except Exception as exc:  # pragma: no cover - latin-1 decodes any bytes
+        raise ECGFormatError("Unreadable .hea file") from exc
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
+    if not lines:
+        raise ECGFormatError("Empty .hea file")
+    first = lines[0].split()
+    if len(first) < 2 or "/" in first[0] or "\\" in first[0]:
+        raise ECGFormatError("Invalid WFDB header (multi-segment records are not supported)")
+    try:
+        n_sig = int(first[1])
+    except ValueError as exc:
+        raise ECGFormatError("Invalid WFDB header: number of signals is not a number") from exc
+    for line in lines[1 : 1 + n_sig]:
+        fname = line.split()[0]
+        if fname != Path(fname).name or fname in (".", "..") or fname.startswith("~") or "\\" in fname:
+            raise ECGFormatError(f"Invalid signal file name in header: {fname!r}")
+        if fname not in uploaded:
+            raise ECGFormatError(f"The header refers to '{fname}', which was not uploaded. "
+                                 "Upload the .hea file together with its .dat file.")
+
+
 def load_ecg_from_files(files: dict[str, bytes], fs: float | None = None) -> ECG:
     """Interpret one uploaded ECG, which may span several files (``.hea`` + ``.dat``)."""
     if not files:
@@ -308,6 +338,7 @@ def load_ecg_from_files(files: dict[str, bytes], fs: float | None = None) -> ECG
 
     if ".hea" in by_ext:
         hea_name = by_ext[".hea"][0]
+        _check_wfdb_header(files[hea_name], {Path(n).name for n in files})
         with tempfile.TemporaryDirectory() as tmp:
             for name, content in files.items():
                 safe = Path(name).name  # never trust client-provided directories
